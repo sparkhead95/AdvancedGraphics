@@ -1,6 +1,7 @@
 <html>
 
 <head>
+<meta charset="utf-8"/>
 <title> My first Three.js app </title>
 <style>
 body {margin: 0;}
@@ -13,6 +14,7 @@ canvas {width: 100%; height 100%;}
 <script>
 //Custom javascript
 
+
 //Define the windows width and height first
 var width = window.innerWidth;
 var height = window.innerHeight;
@@ -20,8 +22,9 @@ var height = window.innerHeight;
 //Define renderer and the scene
 var renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(width, height);
-renderer.shadowMapEnabled = true;
-renderer.shadowMapType = THREE.PCFSoftShadowMap;
+renderer.shadowMap.Enabled = true;
+renderer.shadowMap.Type = THREE.PCFSoftShadowMap;
+
 
 document.body.appendChild(renderer.domElement);
 var scene = new THREE.Scene();
@@ -31,6 +34,8 @@ var scene = new THREE.Scene();
 var cubeGeometry = new THREE.CubeGeometry(0.2,0.5,0.2);
 var cubeMaterial = new THREE.MeshBasicMaterial({color: 0xccffaa});
 var cube = new THREE.Mesh(cubeGeometry,cubeMaterial);
+cube.castShadow = true;
+cube.receiveShadow = false;
 scene.add(cube);
 
 
@@ -40,6 +45,8 @@ var cubeGeometry = new THREE.CubeGeometry(15,20,10);
 var cubeMaterial = new THREE.MeshBasicMaterial({color: 0xffffff});
 var bg = new THREE.Mesh(cubeGeometry,cubeMaterial);
 bg.position.set(-0.8,2,-5);
+bg.receiveShadow = true;
+bg.castShadow = false;
 scene.add(bg);
 
 //Floor
@@ -48,6 +55,8 @@ var cubeMaterial = new THREE.MeshBasicMaterial({color: 0xffffff});
 var floor = new THREE.Mesh(cubeGeometry,cubeMaterial);
 floor.position.set(-0.8,-4,-5);
 floor.rotation.y = 90;
+floor.castShadow = false;
+floor.receiveShadow = true;
 scene.add(floor);
 
 
@@ -97,6 +106,7 @@ group.add(rightTeste);
 scene.add(group);
 
 
+
 //Making a render loop for scenes
 //draw: renderer.render(scene,camera);
 function render(){
@@ -115,7 +125,6 @@ function render(){
 	//group.rotation.x += Math.PI * 0.2/180;
         //group.rotation.y += Math.PI * 0.2/180;
 	//camera.position.x += Math.PI * 0.2/180;
-
 
 	requestAnimationFrame(render);
 }
