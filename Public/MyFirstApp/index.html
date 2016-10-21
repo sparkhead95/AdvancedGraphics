@@ -25,6 +25,7 @@ var renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(width, height);
 renderer.shadowMap.Enabled = true;
 renderer.shadowMap.Type = THREE.PCFSoftShadowMap;
+renderer.setClearColor(new THREE.Color(0xeeeeee, 1.0));
 
 
 document.body.appendChild(renderer.domElement);
@@ -33,10 +34,10 @@ var scene = new THREE.Scene();
 
 //Define the cube
 var cubeGeometry = new THREE.CubeGeometry(0.2,0.5,0.2);
-var cubeMaterial = new THREE.MeshBasicMaterial({color: 0xccffaa});
+var cubeMaterial = new THREE.MeshPhongMaterial({color: 0xccffaa});
 var cube = new THREE.Mesh(cubeGeometry,cubeMaterial);
 cube.castShadow = true;
-cube.receiveShadow = false;
+//cube.receiveShadow = false;
 scene.add(cube);
 
 
@@ -47,16 +48,40 @@ var cubeMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
 var bg = new THREE.Mesh(cubeGeometry,cubeMaterial);
 bg.position.set(-0.8,2,-7);
 bg.receiveShadow = true;
-bg.castShadow = false;
+//bg.castShadow = false;
 scene.add(bg);
+
+
+
+//Left wall
+var cubeGeometry = new THREE.CubeGeometry(30,20,0.1);
+var cubeMaterial = new THREE.MeshBasicMaterial({color: 0xffffff});
+var leftWall = new THREE.Mesh(cubeGeometry,cubeMaterial);
+leftWall.position.set(-7,2,-5);
+leftWall.rotation.y = Math.PI * 90/180;
+leftWall.receiveShadow = true;
+//leftWall.castShadow = false;
+scene.add(leftWall);
+
+//Right wall
+var cubeGeometry = new THREE.CubeGeometry(30,20,0.1);
+var cubeMaterial = new THREE.MeshBasicMaterial({color: 0xffffff});
+var rightWall = new THREE.Mesh(cubeGeometry,cubeMaterial);
+rightWall.position.set(7,2,-5);
+rightWall.rotation.y = Math.PI * 90/180;
+rightWall.receiveShadow = true;
+//rightWall.castShadow = false;
+scene.add(rightWall);
+
+
 
 //Floor
 var cubeGeometry = new THREE.CubeGeometry(20,0.1,20);
 var cubeMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
 var floor = new THREE.Mesh(cubeGeometry,cubeMaterial);
 floor.position.set(-0.8,-4,-5);
-floor.rotation.y = 90;
-floor.castShadow = false;
+floor.rotation.y = Math.PI * 90/180;
+//floor.castShadow = false;
 floor.receiveShadow = true;
 scene.add(floor);
 
@@ -91,11 +116,25 @@ camera.position.set(4, 2, 10);
 camera.lookAt(rightTeste);
 
 //Make light to see things
-var light = new THREE.SpotLight(0xffffff);
-light.position.set(0,0,10);
-scene.add(light);
-light.castShadow = true;
-var helper = new THREE.CameraHelper( light.shadow.camera );
+//var light = new THREE.SpotLight(0xffffff, 0.6, 1000, 40);
+//light.position.set(0,0,50);
+//scene.add(light);
+//light.lookAt(bg);
+//light.castShadow = true;
+//light.shadow.mapSize.width = 1024;
+//light.shadow.mapSize.height = 1024;
+
+//light.shadow.camera.near = 500;
+//light.shadow.camera.far = 4000;
+//light.shadow.camera.fov = 30;
+
+var pointLight = new THREE.PointLight(0xffffff, 1,1000);
+pointLight.position.set(0,0,99);
+pointLight.castShadow = true;
+camera.add(pointLight);
+scene.add(pointLight);
+
+var helper = new THREE.CameraHelper( pointLight.shadow.camera );
 scene.add( helper );
 
 //group things together to make our object
