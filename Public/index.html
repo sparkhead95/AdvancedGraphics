@@ -11,6 +11,7 @@ canvas {width: 100%; height 100%;}
 
 <body>
 <script src = "js/three.min.js" ></script>
+<script src="http://cdn.rawgit.com/mrdoob/three.js/master/examples/js/controls/TrackballControls.js"></script>
 <script>
 //Custom javascript
 
@@ -41,10 +42,10 @@ scene.add(cube);
 
 //Define room
 //Back wall
-var cubeGeometry = new THREE.CubeGeometry(15,20,10);
+var cubeGeometry = new THREE.CubeGeometry(15,20,1);
 var cubeMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
 var bg = new THREE.Mesh(cubeGeometry,cubeMaterial);
-bg.position.set(-0.8,2,-5);
+bg.position.set(-0.8,2,-7);
 bg.receiveShadow = true;
 bg.castShadow = false;
 scene.add(bg);
@@ -91,10 +92,11 @@ camera.lookAt(rightTeste);
 
 //Make light to see things
 var light = new THREE.SpotLight(0xffffff);
-light.position.set(0,0,30);
+light.position.set(0,0,10);
 scene.add(light);
 light.castShadow = true;
-light.shadowCameraVisible = true;
+var helper = new THREE.CameraHelper( light.shadow.camera );
+scene.add( helper );
 
 //group things together to make our object
 group = new THREE.Object3D();
@@ -107,11 +109,39 @@ group.add(rightTeste);
 scene.add(group);
 
 
+//controls
+controls = new THREE.TrackballControls( camera );
+				controls.rotateSpeed = 2.0;
+				controls.zoomSpeed = 1.2;
+				controls.panSpeed = 0.8;
+				controls.noZoom = true;
+				controls.noPan = true;
+				controls.staticMoving = true;
+				controls.dynamicDampingFactor = 0.3;
+window.addEventListener( 'resize', onResize, false );
+
+function onResize() {
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  camera.aspect = ( window.innerWidth / window.innerHeight );
+  camera.updateProjectionMatrix();
+}
+
+//controls handler
+ function onDocumentMouseDown( event ) {
+				event.preventDefault();
+				
+					controls.enabled = true;
+					
+}
+
 
 //Making a render loop for scenes
 //draw: renderer.render(scene,camera);
 function render(){
 	renderer.render(scene,camera);
+	
+	
+	
 	//cube.rotation.x += Math.PI * 0.8/180;
 	//cube.rotation.y += Math.PI * 1.2/180;
 	
@@ -128,6 +158,9 @@ function render(){
 	//camera.position.x += Math.PI * 0.2/180;
 
 	requestAnimationFrame(render);
+var clock = new THREE.Clock();
+ 	var delta = clock.getDelta();
+controls.update(delta);
 }
 render();
 
