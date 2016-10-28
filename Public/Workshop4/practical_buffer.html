@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - buffergeometry - lines drawcalls</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		
+	</head>
+	<body>
+
+		<div id="container"></div>
+		
+		<h2>BufferGeometry and BufferAttribute</h2>
+<p>
+    <ol>
+	 <li> Run the demonstration code and observe what happens
+     <li> Change various parameters and see what happens
+	 <li> Change 'group' to 'scene' and thus, the point cloud and the linesMesh are directly added to the scene, 
+	      watch whether the system slows down. Increase the number of particles from 500 to 5000 and watch again. 
+     <li> Modify the code so that the simulation could be more computationally efficient: for example, 
+	      Euclidean distance may be replaced with Manhattan distance or chessboard distance. 
+     <li> Modify the code so that the potential collisions among the particles could be better visualized
+	 <li> Modify the code so that the potential collision within a limited distance will all be visualized
+	 <li> Modify the code so that the more likely a potential collision occurs, the faster the relevant particles move away from each other
+	 <li> Observe the left top corner of the wondow about FPS: the rendering speed of a given number of particles. 
+	 Change the number of particles and write down their rendering speed accordingly and repeat the process 30 times and then 
+	 draw a scatter plot between the number of particles and 
+	 their randering speed. What conclusion can you draw about the relationship between the number of particles and their rendering speed? 
+	 <li> Analyse the computational complexity of the simulation
+	 </ol>
+ </p>
+ </div>
+ 
+		<script src="js/dat.gui.min.js"></script>
+		<script src="js/three.min.js"></script>
+		<script src="js/stats.min.js"></script>
+
+		<script>
+
+  //
+  // SOURCE: http://threejs.org/examples/webgl_buffergeometry_drawcalls.html
+  //		
+		//
+		// visualize a moving point cloud, whether they are colliding with each other 
+		// visulize a certain number of closest neighbours with the large potential for collision
+		// The likelihood is visualized as brightness
+		// 
+		//
+			var group;
+			var container, stats;
+			var particlesData = [];
+			var camera, scene, renderer;
+			var positions,colors;
+			var pointCloud;
+			var particlePositions;
+			var linesMesh;
+			var maxParticleCount = 1000;
+			var particleCount = 500;
+			var r = 800;
+			var rHalf = r / 2;
+			var effectController = {
+				showDots: true,
+				showLines: true,
+				minDistance: 150,
+				limitConnections: false,
+				maxConnections: 20,
+				particleCount: 500
+			}
+			
+			init();
+			animate();
+			
+			function initGUI() {
+				var gui = new dat.GUI();
+				gui.add( effectController, "showDots" ).onChange( function( value ) { pointCloud.visible = value; } );
+				gui.add( effectController, "showLines" ).onChange( function( value ) { linesMesh.visible = value; } );
+				gui.add( effectController, "minDistance", 10, 300 );
+				gui.add( effectController, "limitConnections" );
+				gui.add( effectController, "maxConnections", 0, 30, 1 );
+				gui.add( effectController, "particleCount", 0, maxParticleCount, 1 ).onChange( function( value ) {
+					particleCount = parseInt( value );
+					particles.drawcalls[ 0 ].count = particleCount;
+				});
+			}
+			
+			function init() {
+				initGUI();
+				container = document.getElementById( 'container' );
+				//
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 4000 );
+				camera.position.z = 1750;
+				
+				scene = new THREE.Scene();
+				
+				// group = new THREE.Group();
+				group = new THREE.Object3D();
+				
+				scene.add( group );
+					
+				var helper = new THREE.BoxHelper( new THREE.Mesh( new THREE.BoxGeometry( r, r, r ) ) );
+				helper.material.color.setHex( 0x080808 );
+				helper.material.blending = THREE.AdditiveBlending;
+				helper.material.transparent = true;
+				group.add( helper );
+				
+				var segments = maxParticleCount * maxParticleCount;
+				positions = new Float32Array( segments * 3 );
+				colors = new Float32Array( segments * 3 );
+				var pMaterial = new THREE.PointCloudMaterial({
+					color: 0xFFFFFF,
+					size: 3,
+					blending: THREE.AdditiveBlending,
+					transparent: true,
+					sizeAttenuation: false
+				});
+				
+				particles = new THREE.BufferGeometry();
+				particlePositions = new Float32Array( maxParticleCount * 3 );
+				for ( var i = 0; i < maxParticleCount; i++ ) {
+					var x = Math.random() * r - r / 2;
+					var y = Math.random() * r - r / 2;
+					var z = Math.random() * r - r / 2;
+					particlePositions[ i * 3     ] = x;
+					particlePositions[ i * 3 + 1 ] = y;
+					particlePositions[ i * 3 + 2 ] = z;
+					// add it to the geometry
+					particlesData.push({
+						velocity: new THREE.Vector3( -1 + Math.random() * 2, -1 + Math.random() * 2,  -1 + Math.random() * 2 ),
+						numConnections: 0
+					});
+				}
+				
+				particles.drawcalls.push( {
+					start: 0,
+					count: particleCount,
+					index: 0
+				} );
+				
+				particles.addAttribute( 'position', new THREE.BufferAttribute( particlePositions, 3 ) );
+				
+				// create the particle system
+				pointCloud = new THREE.PointCloud( particles, pMaterial );
+				
+				// add it to the scene
+				group.add( pointCloud );
+				
+			    var geometry = new THREE.BufferGeometry();
+				
+				geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+				geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+				geometry.computeBoundingSphere();
+				
+				// number of lines to be drawn
+				var numLines=particleCount*effectController.maxConnections;
+				//console.log(numLines);
+				geometry.drawcalls.push( {
+					start: 0,
+					count: numLines,
+					index: 0
+				} );
+				
+				var material = new THREE.LineBasicMaterial({ 
+				    vertexColors: THREE.VertexColors,
+				    blending: THREE.AdditiveBlending,
+				    linewidth:2,
+				    transparent: true
+				});
+			
+				linesMesh = new THREE.Line( geometry, material, THREE.LineSegments);
+				group.add( linesMesh );
+				
+				//
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				var width=window.innerWidth/2;
+				var height=window.innerHeight/2;
+				renderer.setSize( width,  height);
+				renderer.setClearColor(0x000000);
+				//renderer.gammaInput = true;
+				//renderer.gammaOutput = true;
+				container.appendChild( renderer.domElement );
+				//
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild( stats.domElement );
+				window.addEventListener( 'resize', onWindowResize, false );
+			}
+			
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+			
+			function animate() {
+			
+				var vertexpos = 0;
+				var colorpos = 0;
+				var numConnected = 0;
+				
+				for ( var i = 0; i < particleCount; i++ )
+					particlesData[ i ].numConnections = 0;
+					
+				for ( var i = 0; i < particleCount; i++ ) {
+					// get the particle
+					var particleData = particlesData[i];
+					particlePositions[ i * 3     ] += particleData.velocity.x;
+					particlePositions[ i * 3 + 1 ] += particleData.velocity.y;
+					particlePositions[ i * 3 + 2 ] += particleData.velocity.z;
+					
+					if ( particlePositions[ i * 3 + 1 ] < -rHalf || particlePositions[ i * 3 + 1 ] > rHalf )
+						particleData.velocity.y = -particleData.velocity.y;
+					if ( particlePositions[ i * 3 ] < -rHalf || particlePositions[ i * 3 ] > rHalf )
+						particleData.velocity.x = -particleData.velocity.x;
+					if ( particlePositions[ i * 3 + 2 ] < -rHalf || particlePositions[ i * 3 + 2 ] > rHalf )
+						particleData.velocity.z = -particleData.velocity.z;
+						
+					// The continue statement "jumps over" one iteration in the loop.	
+					if ( effectController.limitConnections && particleData.numConnections >= effectController.maxConnections )
+						continue; 
+						
+					// Check collision 
+					for ( var j = i + 1; j < particleCount; j++ ) {
+						var particleDataB = particlesData[ j ];
+						if ( effectController.limitConnections && particleDataB.numConnections >= effectController.maxConnections )
+							continue;
+						var dx = particlePositions[ i * 3     ] - particlePositions[ j * 3     ];
+						var dy = particlePositions[ i * 3 + 1 ] - particlePositions[ j * 3 + 1 ];
+						var dz = particlePositions[ i * 3 + 2 ] - particlePositions[ j * 3 + 2 ];
+						
+						var dist = Math.sqrt( dx * dx + dy * dy + dz * dz );
+						
+						if ( dist < effectController.minDistance ) {
+						
+						        particleData.numConnections++;
+							particleDataB.numConnections++;
+							
+							// nearer neighbours appear brighter, collision probability increases 
+							var alpha = 1.0 - dist / effectController.minDistance + 0.2;
+							
+							positions[ vertexpos++ ] = particlePositions[ i * 3     ];
+							positions[ vertexpos++ ] = particlePositions[ i * 3 + 1 ];
+							positions[ vertexpos++ ] = particlePositions[ i * 3 + 2 ];
+							
+							positions[ vertexpos++ ] = particlePositions[ j * 3     ];
+							positions[ vertexpos++ ] = particlePositions[ j * 3 + 1 ];
+							positions[ vertexpos++ ] = particlePositions[ j * 3 + 2 ];
+							
+							colors[ colorpos++ ] = alpha;
+							colors[ colorpos++ ] = alpha;
+							colors[ colorpos++ ] = alpha;
+							
+							colors[ colorpos++ ] = alpha;
+							colors[ colorpos++ ] = alpha;
+							colors[ colorpos++ ] = alpha;
+							
+							numConnected++;
+						}
+					}
+				}
+				
+				//linesMesh.geometry.setDrawRange( 0, numConnected * 2 );
+				//linesMesh.geometry.groups[ 0 ].count = numConnected * 2;
+				linesMesh.geometry.attributes.position.needsUpdate = true;
+				linesMesh.geometry.attributes.color.needsUpdate = true;
+				pointCloud.geometry.attributes.position.needsUpdate = true;
+				
+				requestAnimationFrame( animate );
+				
+				stats.update();
+				
+				render();
+			}
+			function render() {
+				
+				renderer.render( scene, camera );
+			}
+			
+		</script>
+	</body>
+</html>
