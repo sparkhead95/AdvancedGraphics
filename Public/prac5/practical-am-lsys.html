@@ -1,0 +1,251 @@
+<html>
+    <head>
+        <title>L system demonstration</title>
+        <style>canvas { width: 100%; height: 100% }</style>
+		<canvas id='canvas' width="400" height="400"> </canvas>
+		
+    </head>
+	    <script src="jquery2.1.4.min.js"></script>
+        <script src="three.min.js"></script>
+		<script src="OrbitControls.js"></script>
+<body>
+
+<div id="container" style="position: absolute; top: 750px; left: 20px; width: 800px; ">
+
+<h2>Lindenmayer Systems</h2>
+<p>
+    <ol>
+     <li> Run the demonstration code and observe what happens
+     <li> Change various parameters and rule and see what happens
+     <li> Modify the code so that the relative parameters will change slightly randomly  
+     <li> Modify the code so that the line width changes inversely with the number of generations increasing. 
+	 <li> Modify the code so that the color of the line segment changes in such a way that the later it is drawn, 
+	 the brighter it appears (to reflect the age of the branch). 
+     <li> Modify the code so that multiple trees can be generated at different positions
+     </ol>
+ </p>
+</div>
+
+ <script>
+/*
+Copyright (c) 2014 Mikhail Chernov (http://codepen.io/mikkamikka)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+
+var c, ctx;
+var rules = new Rules();
+var params = new Params();
+var colors = new Colors();
+var Plant = '';
+var width, height;
+
+main();
+
+function main () {
+ c=document.getElementById("canvas");
+ ctx=c.getContext("2d");
+  width = 150; //window.innerWidth/4;
+  height = 300; //window.innerHeight/4;
+ //width = c.width;
+ //height = c.height;
+//c.width  = width;
+//c.height = height;
+ctx.fillStyle = "#000000"; //"rgba(1, 1, 1, 1)";
+ctx.fillRect(0, 0, width, height);
+//ctx.fill();
+
+ //console.log(width);
+
+  setRules7();   
+
+ animate();
+
+//=========================== events
+
+}
+
+function Params() {
+  this.iterations= 4;
+  this.delta= 18; // incremental angle
+  this.thetaRandomness= 0;
+  this.alpha= 90; // heading direction
+  this.step= 10;  // branch length
+  this.scaleRandomness= 0;
+  this.constantWidth= false;
+  this.slope = 0;
+}
+function Colors() {
+  this.background = "#ffffff";
+  this.general = "#000000";
+  this.random= false;
+  this.alpha= 0.8;
+}
+function Rules()  {
+  this.axiom = 'F';
+  this.mainRule = 'FF-[-F+F+F]+[+F-F-F]';
+  this.Rule2 = '';
+}
+
+function drawLine(x, y, x0, y0) {
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x0,y0);
+  ctx.strokeStyle = "#00ff00";
+  ctx.stroke();
+}
+function GetAxiomTree() {
+    var Waxiom = rules.axiom;
+    var newF = rules.mainRule;
+    var newf = 'ff';
+    var newx = rules.Rule2;
+    var level = params.iterations;
+    
+    while (level > 0) {        
+        var T = '';   
+        for (var j=0; j < Waxiom.length; j++) {
+            var a = Waxiom[j];
+            if (a == 'F'){T += newF;}
+            else
+              if (a == 'f'){T += newf;}
+              else                   
+                if (a == 'X'){T += newx;}
+                else
+                   T += a;
+        }
+        Waxiom = T;
+        level--;
+    }
+    return Waxiom;
+}
+
+ function drawTree(x, y) {
+ 
+    Plant = GetAxiomTree();
+	
+    var n = Plant.length;
+    var stackX = [], stackY = [], stackA = [];    
+    var delta = params.delta * Math.PI / 180; 
+    var step = params.step;
+    var alpha = - params.alpha * Math.PI / 180;    
+    var x, y;  
+    var x0 = x, y0 = y;  
+   
+  for (var j=0; j<Plant.length; j++){   
+        //console.log(Plant.length);
+        var a = Plant[j];
+        if (a == "+") {alpha -= delta;}
+        if (a == "-") {alpha += delta;}
+        // move forward and draw a line
+        if (a == "F") {
+            x = x0 + Math.cos(alpha)*step;
+            y = y0 + Math.sin(alpha)*step;
+            
+            drawLine(x0,y0, x, y) ;           
+            x0 = x; y0 = y;
+        }        
+        // move without drawing a line
+        if (a == "f") {
+            x0 = x0 + Math.cos(alpha)*step;
+            y0 = y0 + Math.sin(alpha)*step;
+        }
+        if (a == "[") {
+            stackX.push(x0);
+            stackY[stackY.length] =  y0;
+            stackA[stackA.length] = alpha;       
+          
+        }
+        if (a == "]"){
+            x0 = stackX.pop();
+            y0 = stackY.pop();
+            alpha = stackA.pop();
+        }     
+      
+    }
+  
+};
+
+function animate() {
+	requestAnimationFrame( animate );
+	
+   drawTree(width/2, height*9/10); // draw the tree at the initial position 
+   
+  //console.log(width);
+}
+
+//=========================== rules setters
+function setRules1(){
+  rules.axiom = "F";
+  rules.mainRule = "FF-[-F+F+F]+[+F-F-F]";
+  params.iterations = 3;
+  params.delta = 50;
+  params.step = 20;  
+}
+function setRules2(){
+  //rules.axiom = "F[+F+F][-F-F][++F][--F]F";
+  rules.axiom = "F[F]+[F]+[F]---[F]-[F]";
+  rules.mainRule = "FF[++F][+F][F][-F][--F]";
+  params.iterations = 3;
+  params.delta = 20;
+  params.step = 10;  
+}
+function setRules3(){
+  rules.axiom = "F++[F]--[F]-[F]-[F]";
+  rules.mainRule = "FF++[F[F-F]]--[+F[--F]][---F[-F]]F[-F][F]";
+  params.iterations = 3;
+  params.delta = 15;
+  params.step = 3;  
+}
+function setRules4() {
+  rules.axiom = "X";
+  rules.mainRule = "FF";
+  rules.Rule2 = "F[+X]F[-X]+X";  
+  params.iterations = 5;
+  params.delta = 20;
+  params.step = 4;  
+}
+function setRules5(){
+  rules.axiom = "X";
+  rules.mainRule = "FF";
+  rules.Rule2 = "F[+X][-X]FX";
+  params.iterations = 6;
+  params.delta = 25;
+  params.step = 2.;  
+}
+function setRules6(){
+  rules.axiom = "X";
+  rules.mainRule = "FF";
+  rules.Rule2 = "F-[[X]+X]+F[+FX]-X";
+  params.iterations = 5;
+  params.delta = 25;
+  params.step = 3;  
+}
+
+// http://www.cas.mcmaster.ca/~kahl/CAS701/2007/P/Lindenmayer.pdf
+function setRules7(){
+  rules.axiom = "F";
+  rules.mainRule = "F[+F]F[-F]F";
+  rules.Rule2 = "";
+  params.iterations = 4;
+  params.delta = 25;
+  params.step = 2.5;  
+}
+        </script>
+    </body>
+</html>
