@@ -31,52 +31,73 @@ var scene = new THREE.Scene();
 var axis = new THREE.AxisHelper(10);
 scene.add(axis);
 
+// Define a room
+
 // Floor
-var cube = new THREE.PlaneGeometry(200,100,5,8);
-var cubeMat = new THREE.MeshPhongMaterial({color:0x88898, side: THREE.DoubleSide});
-var floor = new THREE.Mesh(cube, cubeMat);
+var floorGeo = new THREE.PlaneGeometry(500,500,5,8);
+var floorMat = new THREE.MeshPhongMaterial({color:0x88898, side: THREE.DoubleSide});
+var floor = new THREE.Mesh(floorGeo, floorMat);
 floor.receiveShadow = true;
 scene.add(floor);
 
 
 // Roof
-var roof = new THREE.Mesh(cube, cubeMat);
+var roofGeo = new THREE.PlaneGeometry(500,500,5,8);
+var roofMat = new THREE.MeshPhongMaterial({color:0x88898, side: THREE.DoubleSide});
+var roof = new THREE.Mesh(roofGeo, floorMat);
 roof.position.set(0,0,100);
 roof.receiveShadow = true;
 roof.castShadow = true;
 scene.add(roof);
 
-// Back wall
-var bWall = new THREE.Mesh(cube, cubeMat);
-bWall.position.set(0,50,50);
-bWall.rotation.x =  Math.PI * 90 / 180;
-bWall.receiveShadow = true;
-scene.add(bWall);
+// Back left wall
+var cube = new THREE.PlaneGeometry(100,200,5,8);
+var cubeMat = new THREE.MeshPhongMaterial({color:0x88898, side: THREE.DoubleSide});
+var blWall = new THREE.Mesh(cube, cubeMat);
+blWall.position.set(-75,100,100);
+blWall.rotation.x =  Math.PI * 90 / 180;
+blWall.receiveShadow = true;
+
+
+// Back right wall
+var brWall = new THREE.Mesh(cube, cubeMat);
+brWall.position.set(75,100,100);
+brWall.rotation.x =  Math.PI * 90 / 180;
+brWall.receiveShadow = true;
 
 
 // Left wall
+cube = new THREE.PlaneGeometry(200,200,5,8);
 var lWall = new THREE.Mesh(cube, cubeMat);
-lWall.position.set(-100,0,50);
+lWall.position.set(-100,0,100);
 lWall.receiveShadow = true;
 lWall.rotation.y =  Math.PI * 90 / 180;
 lWall.rotation.x =  Math.PI * 90 / 180;
-scene.add(lWall);
+
 
 // Right wall
 var rWall = new THREE.Mesh(cube, cubeMat);
-rWall.position.set(100,0,50);
+rWall.position.set(100,0,100);
 rWall.receiveShadow = true;
 rWall.rotation.y =  Math.PI * 90 / 180;
 rWall.rotation.x =  Math.PI * 90 / 180;
-scene.add(rWall);
+
 
 // Front wall
 var fWall = new THREE.Mesh(cube, cubeMat);
-fWall.position.set(0,-50,50);
+fWall.position.set(0,-100,100);
 fWall.rotation.x =  Math.PI * 90 / 180;
 fWall.receiveShadow = true;
-scene.add(fWall);
 
+
+room = new THREE.Object3D();
+room.add(lWall);
+room.add(rWall);
+room.add(fWall);
+room.add(blWall);
+room.add(brWall);
+//room.rotation.y =  Math.PI * 90 / 180;
+scene.add(room);
 
 
 
@@ -97,18 +118,62 @@ camera.rotation.x =  Math.PI * 90 / 180;
 var ambientLight = new THREE.AmbientLight(0xffffff,0.1);
 scene.add(ambientLight);
 
-var spotLight = new THREE.SpotLight(0xFFffff,10);
-spotLight.position.set(0,0,100);
-spotLight.penumbra = 1;
-spotLight.angle = 0.55;
-spotLight.castShadow = true;
-spotLight.intensity = 1;
+// Define spotlight grid
+var spotLight1 = new THREE.SpotLight(0xFFffff,10);
+spotLight1.position.set(0,0,100);
+spotLight1.penumbra = 1;
+spotLight1.angle = 0.5;
+spotLight1.castShadow = true;
+spotLight1.intensity = 1;
 
-var spotLightHelper = new THREE.SpotLightHelper( spotLight );
-spotLight.shadowCameraFar = 600;
-scene.add(spotLightHelper);
-scene.add(spotLight);
+var spotLight2 = new THREE.SpotLight(0xFFffff,10);
+spotLight2.position.set(85,0,100);
+spotLight2.target.position.set(85,0,0)
+spotLight2.penumbra = 1;
+spotLight2.angle = 0.5;
+spotLight2.castShadow = true;
+spotLight2.intensity = 1;
+spotLight2.target.updateMatrixWorld();
 
+var spotLight3 = new THREE.SpotLight(0xFFffff,10);
+spotLight3.position.set(-85,0,100);
+spotLight3.target.position.set(-85,0,0)
+spotLight3.penumbra = 1;
+spotLight3.angle = 0.5;
+spotLight3.castShadow = true;
+spotLight3.intensity = 1;
+spotLight3.target.updateMatrixWorld();
+
+var spotLight4 = new THREE.SpotLight(0xFFffff,10);
+spotLight4.position.set(0,85,100);
+spotLight4.target.position.set(0,85,0)
+spotLight4.penumbra = 1;
+spotLight4.angle = 0.5;
+spotLight4.castShadow = true;
+spotLight4.intensity = 1;
+spotLight4.target.updateMatrixWorld();
+
+var spotLight5 = new THREE.SpotLight(0xFFffff,10);
+spotLight5.position.set(0,-85,100);
+spotLight5.target.position.set(0,-85,0)
+spotLight5.penumbra = 1;
+spotLight5.angle = 0.5;
+spotLight5.castShadow = true;
+spotLight5.intensity = 1;
+spotLight5.target.updateMatrixWorld();
+
+lights = new THREE.Object3D();
+lights.add(spotLight1);
+lights.add(spotLight2);
+lights.add(spotLight3);
+lights.add(spotLight4);
+lights.add(spotLight5);
+
+scene.add(lights);
+
+
+//scene.add(camera);
+//camera.add(spotLight1);
 
 //controls
 controls = new THREE.TrackballControls( camera );
